@@ -1,3 +1,5 @@
 CS 549 Computer Vision course project:
-![](starlight.png)
+<br />
+![](starlight.png)<br />
+<br />
 Starlight detection!
