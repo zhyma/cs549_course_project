@@ -1,11 +1,38 @@
 import asyncio
 from pyppeteer import launch
+import json
 
 from lxml import etree
 
+counter = 0
+
+async def intercept_network_response(response):
+    global counter
+    if "application/json" in response.headers.get("content-type", ""):
+        # # Print some info about the responses
+        if ('query2' in response.url):
+            # ignore the first response
+            counter += 1
+            
+            if counter > 1:
+                try:
+                    # await response.json() returns the response as Python object
+                    # a dict
+                    content = await response.json()
+
+                    f = open(str(counter)+".txt", "a")
+                    
+                    f.write(str(response.url) + '\r\n' + str(response.headers) + '\r\n' + \
+                            str(response.request.headers) + '\r\n' + str(content))
+                    f.close()
+                except json.decoder.JSONDecodeError:
+                    # NOTE: Use await response.text() if you want to get raw response text
+                    print("Failed to decode JSON from", await response.text())
+
 async def main():
-    browser = await launch(headless=False)
+    browser = await launch(headless=True)
     page = await browser.newPage()
+    page.on('response', lambda response: asyncio.ensure_future(intercept_network_response(response)))
     await page.goto('https://sgpokemap.com/index.html')
 
     # ## get local storage
@@ -44,7 +71,7 @@ async def main():
     # print(local_storage)
 
     print('sleep for 5 secs')
-    await asyncio.sleep(20)
+    await asyncio.sleep(30)
 
     # print('screeshot')
     # await page.screenshot({'path': 'after.png'})
